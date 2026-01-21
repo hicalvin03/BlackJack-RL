@@ -5,7 +5,7 @@ from collections import defaultdict
 import numpy as np
 import time
 
-env = gym.make("Blackjack-v1", render_mode="human")
+env = gym.make("Blackjack-v1",sab=True, render_mode="human")
 
 # Load the trained Q-table
 with open("BlackJack_agent.pkl", "rb") as f:
