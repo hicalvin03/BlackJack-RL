@@ -39,28 +39,30 @@ class Agent:
             return int(np.argmax(self.q_values[obs]))
 
 
-    def Sarsa_update(self, env, obs, action, reward, terminated, next_obs):
+    def Sarsa_update(self, obs, action, reward, terminated, next_obs, next_action):
         
-        #1. we have taken an action observe S', R
-        #2. choose A' from new S' using epsilon-greedy
-
-        next_action = self.get_action(next_obs)
-
-        #3. calculate TD_error
+        # 1. Calculate TD Error
+        current_q = self.q_values[obs][action]
         
-        current_q = self.q_values[obs][action] #estimate of q value
+        # If terminal, next Q is 0
+        if terminated:
+            td_target = reward
+        else:
+            td_target = reward + self.discount_factor * self.q_values[next_obs][next_action]
+            
+        TD_error = td_target - current_q
 
-        TD_error = reward + self.discount_factor*self.q_values[next_obs][next_action] - current_q
+        # 2. Update eligibility trace for current s, a
+        self.e_values[obs][action] += 1
 
-        #4. Update eligibility trace for S,a
+        for state in list(self.e_values.keys()):
+            self.q_values[state] += self.lr * TD_error * self.e_values[state]
+            self.e_values[state] *= self.discount_factor * self.Lambda
 
-        self.e_values[obs][action] +=1
+        self.training_error.append(TD_error)
 
-        #5. Decrease eligibility trace and apply TD_error backwards
+    def decay_epsilon(self):
+        
+        #decay epsilon after each episode
+        self.epsilon = max(self.final_epsilon, self.epsilon - self.epsilon_decay)
 
-        for state in self.q_values:
-            for action in range(env.action_space.n):
-                eligibility_value = self.e_values[state][action]
-                self.q_values[state][action] =  self.q_values[state][action] + self.lr * TD_error * eligibility_value
-
-                self.e_values[state][action] = self.discount_factor * self.Lambda * eligibility_value #Decay eligiblity
